@@ -8,6 +8,7 @@ export const register = async (req: AuthRequest, res: Response) => {
   const { nickname, email, password } = req.body;
 
   try {
+    // Проверка существующего пользователя
     const userExists = await pool.query(
       'SELECT * FROM users WHERE email = $1 OR nickname = $2',
       [email, nickname]
@@ -17,8 +18,10 @@ export const register = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Пользователь уже существует' });
     }
 
+    // Хеширование пароля
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Создание пользователя
     const result = await pool.query(
       'INSERT INTO users (nickname, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, nickname, email, role',
       [nickname, email, hashedPassword, 'user']
@@ -26,6 +29,7 @@ export const register = async (req: AuthRequest, res: Response) => {
 
     const user = result.rows[0];
 
+    // Создание токена
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET!,
