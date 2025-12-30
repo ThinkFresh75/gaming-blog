@@ -17,9 +17,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - gaming-blog-network
 
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
     environment:
@@ -27,25 +31,35 @@ services:
       JWT_SECRET: your_super_secret_jwt_key_change_in_production
       NODE_ENV: development
     volumes:
-      - ./backend:/app
-      - /app/node_modules
+      - ./backend/src:/app/src
+      - ./backend/uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
-    command: npm run dev
+    networks:
+      - gaming-blog-network
+    restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
       VITE_API_URL: http://localhost:5000/api
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
     depends_on:
       - backend
-    command: npm run dev
+    networks:
+      - gaming-blog-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+
+networks:
+  gaming-blog-network:
+    driver: bridge
